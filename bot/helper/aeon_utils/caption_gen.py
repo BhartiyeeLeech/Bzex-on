@@ -15,10 +15,18 @@ from bot.helper.ext_utils.status_utils import (
 
 
 class DefaultDict(dict):
-    """A dictionary that returns a default value for a missing key."""
+    """A dictionary that returns a default value for a missing key or empty value."""
 
     def __missing__(self, key):
-        return "Unknown"
+        return ""
+    
+    def __getitem__(self, key):
+        """Override to return empty string for None or empty values."""
+        value = super().get(key, "")
+        # Return empty string for None, empty string, or "Unknown" placeholder
+        if value is None or value == "":
+            return ""
+        return value
 
 
 async def generate_caption(filename, directory, caption_template, media_info=None):

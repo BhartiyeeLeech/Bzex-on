@@ -157,6 +157,7 @@ class TelegramUploader:
         user_dict = getattr(self._listener, "user_dict", {})
         auto_rename = user_dict.get("AUTO_RENAME", False)
         pre_file_ = file_  # Store original filename
+        media_info = None  # Initialize media_info
 
         if auto_rename:
             try:
@@ -321,9 +322,63 @@ class TelegramUploader:
                 except Exception as e:
                     LOGGER.error(f"Failed to apply rename template: {e}")
                     file_ = pre_file_  # Keep original name if template fails
+
+                # Build media_info dict for caption generation
+                from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
+                
+                file_size = ospath.getsize(up_path)
+                duration_seconds = 0
+                
+                # Get duration from ffprobe
+                try:
+                    duration_cmd = [
+                        "ffprobe",
+                        "-v", "error",
+                        "-show_entries", "format=duration",
+                        "-of", "default=noprint_wrappers=1:nokey=1",
+                        up_path,
+                    ]
+                    duration_out = subprocess.run(
+                        duration_cmd,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    if duration_out.returncode == 0 and duration_out.stdout.strip():
+                        duration_seconds = int(float(duration_out.stdout.strip()))
+                except Exception:
+                    pass
+
+                # Extract season/episode from the ORIGINAL filename for caption
+                filename_name, filename_season, filename_episode, filename_year, _, _ = extract_media_info(pre_file_)
+                
+                # Use extracted values from filename if available, otherwise use template fields
+                caption_season = filename_season if filename_season else str(season).zfill(2)
+                caption_episode = filename_episode if filename_episode else str(template_fields.get('episode2', episode)).zfill(2)
+                caption_name = imdb_data.get("title", "") or filename_name
+                caption_year = imdb_data.get("year", "") or filename_year
+
+                media_info = {
+                    "filename": pre_file_,
+                    "filesize": get_readable_file_size(file_size),
+                    "file_caption": "",
+                    "languages": audio if audio else "Unknown",
+                    "subtitles": "Unknown",
+                    "duration": get_readable_time(duration_seconds, True) if duration_seconds else "Unknown",
+                    "ott": "",
+                    "resolution": f"{quality}p" if quality else "Unknown",
+                    "name": caption_name,
+                    "year": caption_year,
+                    "quality": f"{quality}p" if quality else "Unknown",
+                    "season": caption_season,
+                    "episode": caption_episode,
+                    "audio": audio if audio else "Unknown",
+                }
             except Exception as e:
                 LOGGER.error(f"Auto rename failed for leech: {e}")
                 file_ = pre_file_  # Keep original name if auto rename fails
+                media_info = None
 
         # Continue with existing logic using file_ (which may be renamed)
         if self._lcaption:
