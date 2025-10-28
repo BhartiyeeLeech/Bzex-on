@@ -19,7 +19,7 @@ class DefaultDict(dict):
 
     def __missing__(self, key):
         return ""
-    
+
     def __getitem__(self, key):
         """Override to return empty string for None or empty values."""
         value = super().get(key, "")
