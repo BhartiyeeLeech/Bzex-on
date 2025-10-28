@@ -294,7 +294,7 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
         auto_yt_leech = user_dict.get("AUTO_YT_LEECH", False)
         auto_leech = user_dict.get("AUTO_LEECH", False)
         auto_mirror = user_dict.get("AUTO_MIRROR", False)
-        
+
         if auto_yt_leech:
             buttons.data_button(
                 "Disable Auto YT Leech",
@@ -307,7 +307,7 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
                 f"userset {user_id} tog AUTO_YT_LEECH t",
             )
             ayt_status = "Disabled"
-        
+
         if auto_leech:
             buttons.data_button(
                 "Disable Auto Leech",
@@ -320,7 +320,7 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
                 f"userset {user_id} tog AUTO_LEECH t",
             )
             al_status = "Disabled"
-        
+
         if auto_mirror:
             buttons.data_button(
                 "Disable Auto Mirror",
@@ -333,10 +333,10 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
                 f"userset {user_id} tog AUTO_MIRROR t",
             )
             am_status = "Disabled"
-        
+
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
-        
+
         text = f"""<u>Auto Processing Settings for {name}</u>
 
 <b>Auto YT Leech:</b> {ayt_status}
@@ -735,7 +735,14 @@ async def edit_user_settings(client, query):
         await query.answer("Not Yours!", show_alert=True)
     elif data[2] == "setevent":
         await query.answer()
-    elif data[2] in ["leech", "gdrive", "rclone", "gofile", "youtube", "auto_process"]:
+    elif data[2] in [
+        "leech",
+        "gdrive",
+        "rclone",
+        "gofile",
+        "youtube",
+        "auto_process",
+    ]:
         await query.answer()
         await update_user_settings(query, data[2])
     elif data[2] == "menu":

@@ -270,7 +270,7 @@ def add_handlers():
         AutoProcessor,
         auto_process_filter,
     )
-    
+
     TgClient.bot.add_handler(
         MessageHandler(
             AutoProcessor.process_auto_message,
