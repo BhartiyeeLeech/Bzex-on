@@ -352,10 +352,12 @@ If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
     elif stype == "auto_rename":
         # Auto Rename settings
         auto_rename = user_dict.get("AUTO_RENAME", False)
-        rename_template = user_dict.get("RENAME_TEMPLATE", "S{season}E{episode}Q{quality}")
+        rename_template = user_dict.get(
+            "RENAME_TEMPLATE", "S{season}E{episode}Q{quality}"
+        )
         start_episode = user_dict.get("START_EPISODE", 1)
         start_season = user_dict.get("START_SEASON", 1)
-        
+
         if auto_rename:
             buttons.data_button(
                 "Disable Auto Rename",
@@ -368,7 +370,7 @@ If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
                 f"userset {user_id} tog AUTO_RENAME t",
             )
             ar_status = "Disabled"
-        
+
         buttons.data_button(
             "Set Template",
             f"userset {user_id} menu RENAME_TEMPLATE",
@@ -383,7 +385,7 @@ If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
         )
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
-        
+
         text = f"""<u>Auto Rename Settings for {name}</u>
 
 <b>Status:</b> {ar_status}
@@ -514,8 +516,12 @@ Automatically fetches IMDB info and renames files using the template.</i>"""
         buttons.data_button("Close", f"userset {user_id} close")
 
         # Auto Rename status
-        auto_rename_status = "Enabled" if user_dict.get("AUTO_RENAME", False) else "Disabled"
-        rename_template = user_dict.get("RENAME_TEMPLATE", "S{season}E{episode}Q{quality}")
+        auto_rename_status = (
+            "Enabled" if user_dict.get("AUTO_RENAME", False) else "Disabled"
+        )
+        rename_template = user_dict.get(
+            "RENAME_TEMPLATE", "S{season}E{episode}Q{quality}"
+        )
 
         text = f"""<u>Settings for {name}</u>
 Default Package is <b>{du}</b>
@@ -640,10 +646,20 @@ async def set_option(_, message, option):
             await send_message(message, f"{option} must be at least 1!")
             return
     elif option == "RENAME_TEMPLATE":
-        template_vars = ["{name}", "{year}", "{quality}", "{season}", "{episode}", "{audio}"]
+        template_vars = [
+            "{name}",
+            "{year}",
+            "{quality}",
+            "{season}",
+            "{episode}",
+            "{audio}",
+        ]
         has_var = any(var in value for var in template_vars)
         if not has_var:
-            await send_message(message, f"RENAME_TEMPLATE must contain at least one variable: {', '.join(template_vars)}")
+            await send_message(
+                message,
+                f"RENAME_TEMPLATE must contain at least one variable: {', '.join(template_vars)}",
+            )
             return
     update_user_ldata(user_id, option, value)
     await delete_message(message)

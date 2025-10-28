@@ -85,31 +85,34 @@ class TaskListener(TaskConfig):
         """
         if not filename:
             return filename
-            
+
         original_filename = filename
-        
+
         # Get prefix and suffix from user settings with backward compatibility
         prefix = (
-            self.user_dict.get("FILENAME_PREFIX") or
-            self.user_dict.get("LEECH_PREFIX") or
-            getattr(Config, "FILENAME_PREFIX", "") or
-            getattr(Config, "LEECH_PREFIX", "")
+            self.user_dict.get("FILENAME_PREFIX")
+            or self.user_dict.get("LEECH_PREFIX")
+            or getattr(Config, "FILENAME_PREFIX", "")
+            or getattr(Config, "LEECH_PREFIX", "")
         )
-        
+
         suffix = (
-            self.user_dict.get("FILENAME_SUFFIX") or
-            self.user_dict.get("LEECH_SUFFIX") or
-            getattr(Config, "FILENAME_SUFFIX", "") or
-            getattr(Config, "LEECH_SUFFIX", "")
+            self.user_dict.get("FILENAME_SUFFIX")
+            or self.user_dict.get("LEECH_SUFFIX")
+            or getattr(Config, "FILENAME_SUFFIX", "")
+            or getattr(Config, "LEECH_SUFFIX", "")
         )
-        
+
         # Apply prefix and suffix
         if prefix or suffix:
             from os import path as ospath
+
             name, ext = ospath.splitext(filename)
             filename = f"{prefix}{name}{suffix}{ext}"
-            LOGGER.info(f"Applied prefix/suffix: '{original_filename}' -> '{filename}'")
-        
+            LOGGER.info(
+                f"Applied prefix/suffix: '{original_filename}' -> '{filename}'"
+            )
+
         return filename
 
     async def remove_from_same_dir(self):
@@ -357,29 +360,38 @@ class TaskListener(TaskConfig):
         self.subproc = None
 
         # Apply Auto Rename for mirror operations (rename actual files on disk)
-        if not self.is_leech and self.user_dict.get('AUTO_RENAME', False):
+        if not self.is_leech and self.user_dict.get("AUTO_RENAME", False):
             try:
-                LOGGER.info(f"Auto Rename enabled for mirror operation - processing files at: {up_path}")
-                from bot.helper.ext_utils.filename_utils import apply_auto_rename_to_path
+                LOGGER.info(
+                    f"Auto Rename enabled for mirror operation - processing files at: {up_path}"
+                )
+                from bot.helper.ext_utils.filename_utils import (
+                    apply_auto_rename_to_path,
+                )
+
                 original_up_path = up_path
                 up_path = await apply_auto_rename_to_path(up_path, self)
-                
+
                 # Update self.name if the main file/folder was renamed
                 if original_up_path != up_path:
                     from os import path as ospath
+
                     self.name = ospath.basename(up_path)
                     LOGGER.info(f"Updated task name after auto rename: {self.name}")
-                
+
                 if self.is_cancelled:
                     return
                 # Recalculate size after auto rename
                 self.size = await get_path_size(up_path)
-                LOGGER.info("Auto Rename process completed successfully for mirror operation")
+                LOGGER.info(
+                    "Auto Rename process completed successfully for mirror operation"
+                )
             except Exception as e:
                 LOGGER.warning(f"Auto Rename failed for mirror operation: {e}")
-        else:
-            if not self.is_leech:
-                LOGGER.info("Auto Rename disabled or not configured for mirror operation")
+        elif not self.is_leech:
+            LOGGER.info(
+                "Auto Rename disabled or not configured for mirror operation"
+            )
 
         # Apply universal filename modifications for all operations
         # For mirror operations, this ensures prefix/suffix are applied to the final upload name
@@ -387,7 +399,9 @@ class TaskListener(TaskConfig):
             original_name = self.name
             self.name = self.apply_filename_modifications(self.name)
             if original_name != self.name:
-                LOGGER.info(f"Applied filename modifications: '{original_name}' -> '{self.name}'")
+                LOGGER.info(
+                    f"Applied filename modifications: '{original_name}' -> '{self.name}'"
+                )
 
         add_to_queue, event = await check_running_tasks(self, "up")
         await start_from_queued()

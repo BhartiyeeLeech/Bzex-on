@@ -150,28 +150,36 @@ class TelegramUploader:
 
     async def _prepare_file(self, file_, dirpath):
         # --- AUTO RENAME LOGIC ---
-        import re  # Import re module for both auto-rename logic and clean_filename_for_title function
         import json
+        import re  # Import re module for both auto-rename logic and clean_filename_for_title function
         import subprocess
-        
-        user_dict = getattr(self._listener, 'user_dict', {})
-        auto_rename = user_dict.get('AUTO_RENAME', False)
+
+        user_dict = getattr(self._listener, "user_dict", {})
+        auto_rename = user_dict.get("AUTO_RENAME", False)
         pre_file_ = file_  # Store original filename
-        
+
         if auto_rename:
             try:
-                template = user_dict.get('RENAME_TEMPLATE', 'S{season}E{episode}Q{quality}')
-                episode = int(user_dict.get('_CURRENT_EPISODE', user_dict.get('START_EPISODE', 1)))
-                season = int(user_dict.get('START_SEASON', 1))
-                
+                template = user_dict.get(
+                    "RENAME_TEMPLATE", "S{season}E{episode}Q{quality}"
+                )
+                episode = int(
+                    user_dict.get(
+                        "_CURRENT_EPISODE", user_dict.get("START_EPISODE", 1)
+                    )
+                )
+                season = int(user_dict.get("START_SEASON", 1))
+
                 up_path = ospath.join(dirpath, pre_file_)
                 _, quality, lang, _ = await get_media_info(up_path, True)
-                quality = str(quality).replace('p', '') if quality else ''
+                quality = str(quality).replace("p", "") if quality else ""
 
                 # Clean filename to get probable title
                 def clean_filename_for_title(filename):
                     # Use extract_media_info to get the best title and year
-                    name, _season, _episode, year, part, volume = extract_media_info(filename)
+                    name, _season, _episode, year, _part, _volume = (
+                        extract_media_info(filename)
+                    )
                     # If we have both name and year, return 'Name Year'
                     if name and year:
                         result = f"{name} {year}"
@@ -180,46 +188,68 @@ class TelegramUploader:
                     else:
                         # fallback to old logic if extract_media_info fails
                         name = ospath.splitext(filename)[0]
-                        name = re.sub(r'[\[\](){}⟨⟩【】『』""''«»‹›❮❯❰❱❲❳❴❵]', ' ', name)
-                        name = re.sub(r'\s+', ' ', name).strip()
-                        result = name if name else 'Unknown'
+                        name = re.sub(
+                            r'[\[\](){}⟨⟩【】『』""' "«»‹›❮❯❰❱❲❳❴❵]", " ", name
+                        )
+                        name = re.sub(r"\s+", " ", name).strip()
+                        result = name if name else "Unknown"
                     LOGGER.info(f"Final cleaned title for lookups: '{result}'")
                     return result
-                    
+
                 probable_title = clean_filename_for_title(pre_file_)
-                
+
                 # Fetch IMDB info
                 from bot.modules.imdb import get_poster
+
                 imdb_info = None
                 if probable_title:
                     imdb_info = get_poster(probable_title)
                 if imdb_info:
                     imdb_data = {
-                        'title': imdb_info.get('title', ''),
-                        'year': imdb_info.get('year', ''),
-                        'rating': imdb_info.get('rating', '').replace(' / 10', ''),
-                        'genre': imdb_info.get('genres', ''),
+                        "title": imdb_info.get("title", ""),
+                        "year": imdb_info.get("year", ""),
+                        "rating": imdb_info.get("rating", "").replace(" / 10", ""),
+                        "genre": imdb_info.get("genres", ""),
                     }
                 else:
-                    imdb_data = {'title': probable_title, 'year': '', 'rating': '', 'genre': ''}
-                    
+                    imdb_data = {
+                        "title": probable_title,
+                        "year": "",
+                        "rating": "",
+                        "genre": "",
+                    }
+
                 # Get audio language(s)
                 audio_count = 0
-                audio = lang or ''
+                audio = lang or ""
                 try:
                     ffprobe_cmd = [
-                        'ffprobe', '-v', 'error', '-select_streams', 'a', 
-                        '-show_entries', 'stream=index', '-of', 'json', up_path
+                        "ffprobe",
+                        "-v",
+                        "error",
+                        "-select_streams",
+                        "a",
+                        "-show_entries",
+                        "stream=index",
+                        "-of",
+                        "json",
+                        up_path,
                     ]
-                    ffprobe_out = subprocess.run(ffprobe_cmd, capture_output=True, text=True, timeout=30)
+                    ffprobe_out = subprocess.run(
+                        ffprobe_cmd,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
                     if ffprobe_out.returncode == 0:
                         audio_json = json.loads(ffprobe_out.stdout)
-                        audio_count = len(audio_json.get('streams', []))
+                        audio_count = len(audio_json.get("streams", []))
                     if audio_count >= 2:
-                        audio = 'MultiAuD'
+                        audio = "MultiAuD"
                 except Exception:
                     pass
-                    
+
                 # Merge all fields for template - episode will be updated later
                 template_fields = dict(
                     season=season,
@@ -227,62 +257,83 @@ class TelegramUploader:
                     episode=f"{episode:02d}",  # zero-padded, for E01, E02, ...
                     quality=quality,
                     audio=audio,
-                    **imdb_data
+                    **imdb_data,
                 )
-                
+
                 # Check if this is a multi-resolution file (contains pattern like _720p_BL, _480p_BL, etc.)
-                is_multi_resolution_file = bool(re.search(r'_\d+p_BL\.', pre_file_))
-                
+                is_multi_resolution_file = bool(re.search(r"_\d+p_BL\.", pre_file_))
+
                 # Handle episode numbering for multi-resolution files
                 if is_multi_resolution_file:
                     # Check if we've already processed a file from this batch
-                    base_filename = re.sub(r'_\d+p_BL\.', '.', pre_file_)  # Remove quality suffix
+                    base_filename = re.sub(
+                        r"_\d+p_BL\.", ".", pre_file_
+                    )  # Remove quality suffix
                     batch_key = f"multi_res_batch_{base_filename}"
-                    
+
                     # For multi-resolution batch, use the same episode number for all files
                     if not user_dict.get(batch_key, False):
                         # First file in batch - increment and store the episode number
-                        user_dict['_CURRENT_EPISODE'] = episode + 1
-                        user_dict[batch_key] = episode  # Store the episode number to use for this batch
-                        current_episode = episode  # Use original episode for this batch
-                        LOGGER.info(f"Multi-resolution batch detected. Episode {episode} will be used for all files in batch: {base_filename}")
+                        user_dict["_CURRENT_EPISODE"] = episode + 1
+                        user_dict[batch_key] = (
+                            episode  # Store the episode number to use for this batch
+                        )
+                        current_episode = (
+                            episode  # Use original episode for this batch
+                        )
+                        LOGGER.info(
+                            f"Multi-resolution batch detected. Episode {episode} will be used for all files in batch: {base_filename}"
+                        )
                     else:
                         # Subsequent files in batch - use the same episode number as the first file
                         current_episode = user_dict[batch_key]
-                        LOGGER.info(f"Multi-resolution file from same batch, using episode {current_episode}: {pre_file_}")
-                    
+                        LOGGER.info(
+                            f"Multi-resolution file from same batch, using episode {current_episode}: {pre_file_}"
+                        )
+
                     # Clean up old batch keys to prevent memory buildup (keep only recent 50 keys)
-                    batch_keys = [k for k in user_dict.keys() if k.startswith("multi_res_batch_")]
+                    batch_keys = [
+                        k for k in user_dict if k.startswith("multi_res_batch_")
+                    ]
                     if len(batch_keys) > 50:
                         # Remove oldest batch keys (simple cleanup)
                         for key in sorted(batch_keys)[:-50]:
                             user_dict.pop(key, None)
-                            
+
                     # Update template fields with correct episode
-                    template_fields['episode2'] = current_episode
-                    template_fields['episode'] = f"{current_episode:02d}"
+                    template_fields["episode2"] = current_episode
+                    template_fields["episode"] = f"{current_episode:02d}"
                 else:
                     # Regular single file - increment episode counter normally
-                    user_dict['_CURRENT_EPISODE'] = episode + 1
-                    LOGGER.info(f"Single file processed. Using episode {episode}, next will be {episode + 1}: {pre_file_}")
-                
+                    user_dict["_CURRENT_EPISODE"] = episode + 1
+                    LOGGER.info(
+                        f"Single file processed. Using episode {episode}, next will be {episode + 1}: {pre_file_}"
+                    )
+
                 # Apply template to generate new filename
                 try:
                     new_name = template.format(**template_fields)
                     ext = ospath.splitext(pre_file_)[1]
                     file_ = f"{new_name}{ext}"
-                    LOGGER.info(f"Auto renamed for leech: '{pre_file_}' -> '{file_}' (Episode {template_fields['episode2']})")
+                    LOGGER.info(
+                        f"Auto renamed for leech: '{pre_file_}' -> '{file_}' (Episode {template_fields['episode2']})"
+                    )
                 except Exception as e:
                     LOGGER.error(f"Failed to apply rename template: {e}")
                     file_ = pre_file_  # Keep original name if template fails
             except Exception as e:
                 LOGGER.error(f"Auto rename failed for leech: {e}")
                 file_ = pre_file_  # Keep original name if auto rename fails
-        
+
         # Continue with existing logic using file_ (which may be renamed)
         if self._lcaption:
             # Pass media_info to generate_caption if available
-            cap_mono = await generate_caption(file_, dirpath, self._lcaption, media_info=media_info if auto_rename else None)
+            cap_mono = await generate_caption(
+                file_,
+                dirpath,
+                self._lcaption,
+                media_info=media_info if auto_rename else None,
+            )
         if self._lprefix:
             if not self._lcaption:
                 cap_mono = f"{self._lprefix} {file_}"
@@ -297,7 +348,7 @@ class TelegramUploader:
             new_path = ospath.join(dirpath, file_)
             await rename(self._up_path, new_path)
             self._up_path = new_path
-            
+
         if not self._lcaption and not self._lprefix:
             cap_mono = f"<code>{file_}</code>"
         if len(file_) > 60:
@@ -720,18 +771,18 @@ class TelegramUploader:
 def extract_media_info(filename):
     """
     Extract media information from filename for Auto Rename feature
-    
+
     Args:
         filename (str): Filename to parse
-        
+
     Returns:
         tuple: (name, season, episode, year, part, volume)
     """
     import re
-    
+
     # Remove file extension
     name_only = ospath.splitext(filename)[0]
-    
+
     # Initialize variables
     name = ""
     season = None
@@ -739,60 +790,73 @@ def extract_media_info(filename):
     year = None
     part = None
     volume = None
-    
+
     # Extract year (4 digits in parentheses or standalone)
-    year_match = re.search(r'[\(\[]?(\d{4})[\)\]]?', name_only)
+    year_match = re.search(r"[\(\[]?(\d{4})[\)\]]?", name_only)
     if year_match:
         year = year_match.group(1)
         # Remove year from name for further processing
-        name_only = name_only.replace(year_match.group(0), '').strip()
-    
+        name_only = name_only.replace(year_match.group(0), "").strip()
+
     # Extract season and episode patterns
     # Pattern: S01E01, S1E1, Season 1 Episode 1, 1x01, etc.
     se_patterns = [
-        r'[Ss](\d+)[Ee](\d+)',           # S01E01, s01e01
-        r'[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)',  # Season 1 Episode 1
-        r'(\d+)x(\d+)',                   # 1x01
+        r"[Ss](\d+)[Ee](\d+)",  # S01E01, s01e01
+        r"[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)",  # Season 1 Episode 1
+        r"(\d+)x(\d+)",  # 1x01
     ]
-    
+
     for pattern in se_patterns:
         match = re.search(pattern, name_only)
         if match:
             season = match.group(1)
             episode = match.group(2)
             # Remove season/episode from name
-            name_only = name_only.replace(match.group(0), '').strip()
+            name_only = name_only.replace(match.group(0), "").strip()
             break
-    
+
     # Extract part number
-    part_match = re.search(r'[Pp]art\s*(\d+)', name_only)
+    part_match = re.search(r"[Pp]art\s*(\d+)", name_only)
     if part_match:
         part = part_match.group(1)
-        name_only = name_only.replace(part_match.group(0), '').strip()
-    
+        name_only = name_only.replace(part_match.group(0), "").strip()
+
     # Extract volume
-    vol_match = re.search(r'[Vv]ol(?:ume)?\s*(\d+)', name_only)
+    vol_match = re.search(r"[Vv]ol(?:ume)?\s*(\d+)", name_only)
     if vol_match:
         volume = vol_match.group(1)
-        name_only = name_only.replace(vol_match.group(0), '').strip()
-    
+        name_only = name_only.replace(vol_match.group(0), "").strip()
+
     # Clean up the remaining name
     # Remove quality indicators
-    name_only = re.sub(r'\b(480p|720p|1080p|2160p|4k|8k)\b', '', name_only, flags=re.IGNORECASE)
+    name_only = re.sub(
+        r"\b(480p|720p|1080p|2160p|4k|8k)\b", "", name_only, flags=re.IGNORECASE
+    )
     # Remove codec/format indicators
-    name_only = re.sub(r'\b(x264|x265|h264|h265|hevc|avc|10bit|8bit)\b', '', name_only, flags=re.IGNORECASE)
+    name_only = re.sub(
+        r"\b(x264|x265|h264|h265|hevc|avc|10bit|8bit)\b",
+        "",
+        name_only,
+        flags=re.IGNORECASE,
+    )
     # Remove release groups (usually in square brackets)
-    name_only = re.sub(r'\[.*?\]', '', name_only)
+    name_only = re.sub(r"\[.*?\]", "", name_only)
     # Remove source indicators
-    name_only = re.sub(r'\b(BluRay|BRRip|WEB-DL|WEBRip|HDTV|DVDRip|BDRip|WEB)\b', '', name_only, flags=re.IGNORECASE)
+    name_only = re.sub(
+        r"\b(BluRay|BRRip|WEB-DL|WEBRip|HDTV|DVDRip|BDRip|WEB)\b",
+        "",
+        name_only,
+        flags=re.IGNORECASE,
+    )
     # Remove extra indicators
-    name_only = re.sub(r'\b(REPACK|PROPER|REAL|RERIP)\b', '', name_only, flags=re.IGNORECASE)
+    name_only = re.sub(
+        r"\b(REPACK|PROPER|REAL|RERIP)\b", "", name_only, flags=re.IGNORECASE
+    )
     # Replace dots, underscores, and hyphens with spaces
-    name_only = re.sub(r'[._-]+', ' ', name_only)
+    name_only = re.sub(r"[._-]+", " ", name_only)
     # Remove multiple spaces
-    name_only = re.sub(r'\s+', ' ', name_only).strip()
-    
-    name = name_only if name_only else "Unknown"
-    
-    return name, season, episode, year, part, volume
+    name_only = re.sub(r"\s+", " ", name_only).strip()
 
+    name = name_only if name_only else "Unknown"
+
+    return name, season, episode, year, part, volume
