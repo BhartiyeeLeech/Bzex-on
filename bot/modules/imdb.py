@@ -7,7 +7,10 @@ from logging import getLogger
 from urllib.parse import quote_plus
 
 import requests
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
 
 LOGGER = getLogger(__name__)
 
@@ -24,6 +27,11 @@ def get_poster(query):
         None: If lookup fails
     """
     if not query or not query.strip():
+        return None
+
+    # If BeautifulSoup is not available, skip IMDB lookup gracefully
+    if BeautifulSoup is None:
+        LOGGER.warning("bs4 (BeautifulSoup) not installed; skipping IMDB lookup")
         return None
 
     try:

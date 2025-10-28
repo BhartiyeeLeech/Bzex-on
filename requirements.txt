@@ -5,6 +5,7 @@ anytree
 apscheduler
 aioaria2
 aioqbt
+beautifulsoup4
 cloudscraper
 dnspython
 ElectroCrypto
