@@ -349,6 +349,66 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
 
 Priority: AUTO_YT_LEECH > AUTO_LEECH > AUTO_MIRROR
 If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
+    elif stype == "auto_rename":
+        # Auto Rename settings
+        auto_rename = user_dict.get("AUTO_RENAME", False)
+        rename_template = user_dict.get("RENAME_TEMPLATE", "S{season}E{episode}Q{quality}")
+        start_episode = user_dict.get("START_EPISODE", 1)
+        start_season = user_dict.get("START_SEASON", 1)
+        
+        if auto_rename:
+            buttons.data_button(
+                "Disable Auto Rename",
+                f"userset {user_id} tog AUTO_RENAME f",
+            )
+            ar_status = "Enabled"
+        else:
+            buttons.data_button(
+                "Enable Auto Rename",
+                f"userset {user_id} tog AUTO_RENAME t",
+            )
+            ar_status = "Disabled"
+        
+        buttons.data_button(
+            "Set Template",
+            f"userset {user_id} menu RENAME_TEMPLATE",
+        )
+        buttons.data_button(
+            "Set Start Episode",
+            f"userset {user_id} menu START_EPISODE",
+        )
+        buttons.data_button(
+            "Set Start Season",
+            f"userset {user_id} menu START_SEASON",
+        )
+        buttons.data_button("Back", f"userset {user_id} back")
+        buttons.data_button("Close", f"userset {user_id} close")
+        
+        text = f"""<u>Auto Rename Settings for {name}</u>
+
+<b>Status:</b> {ar_status}
+<b>Template:</b> <code>{rename_template}</code>
+<b>Start Episode:</b> {start_episode}
+<b>Start Season:</b> {start_season}
+
+<b><u>Template Variables (IMDB Integrated):</u></b>
+• <code>{{season}}</code> - Season number
+• <code>{{episode}}</code> - Episode (padded: 01, 02)
+• <code>{{episode2}}</code> - Episode (unpadded: 1, 2)
+• <code>{{quality}}</code> - Video quality (720, 1080)
+• <code>{{audio}}</code> - Audio language or MultiAuD
+• <code>{{title}}</code> - IMDB title
+• <code>{{year}}</code> - Release year
+• <code>{{rating}}</code> - IMDB rating
+• <code>{{genre}}</code> - Genre(s)
+
+<b>Examples:</b>
+<code>S{{season}}E{{episode}}Q{{quality}}</code>
+<code>{{title}} ({{year}}) S{{season}}E{{episode}} [{{quality}}p]</code>
+<code>{{title}}.{{year}}.S{{season}}E{{episode}}.{{quality}}p.{{audio}}</code>
+
+<i>Auto Rename works for both Leech and Mirror operations.
+Automatically fetches IMDB info and renames files using the template.</i>"""
     else:
         buttons.data_button("Leech", f"userset {user_id} leech")
         buttons.data_button("Rclone", f"userset {user_id} rclone")
@@ -356,6 +416,7 @@ If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
         buttons.data_button("GoFile", f"userset {user_id} gofile")
         buttons.data_button("YouTube", f"userset {user_id} youtube")
         buttons.data_button("Auto Leech/Mirror", f"userset {user_id} auto_process")
+        buttons.data_button("Auto Rename", f"userset {user_id} auto_rename")
 
         upload_paths = user_dict.get("UPLOAD_PATHS", {})
         if (
@@ -452,10 +513,17 @@ If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
 
         buttons.data_button("Close", f"userset {user_id} close")
 
+        # Auto Rename status
+        auto_rename_status = "Enabled" if user_dict.get("AUTO_RENAME", False) else "Disabled"
+        rename_template = user_dict.get("RENAME_TEMPLATE", "S{season}E{episode}Q{quality}")
+
         text = f"""<u>Settings for {name}</u>
 Default Package is <b>{du}</b>
 Use <b>{tr}</b> token/config
 Upload Paths is <code>{upload_paths}</code>
+
+Auto Rename is <b>{auto_rename_status}</b>
+Rename Template: <code>{rename_template}</code>
 
 Name substitution is <code>{ns_msg}</code>
 Excluded Extensions is <code>{ex_ex}</code>
@@ -563,6 +631,20 @@ async def set_option(_, message, option):
         else:
             await send_message(message, "It must be dict!")
             return
+    elif option in ["START_EPISODE", "START_SEASON"]:
+        if not value.isdigit():
+            await send_message(message, f"{option} must be a positive number!")
+            return
+        value = int(value)
+        if value < 1:
+            await send_message(message, f"{option} must be at least 1!")
+            return
+    elif option == "RENAME_TEMPLATE":
+        template_vars = ["{name}", "{year}", "{quality}", "{season}", "{episode}", "{audio}"]
+        has_var = any(var in value for var in template_vars)
+        if not has_var:
+            await send_message(message, f"RENAME_TEMPLATE must contain at least one variable: {', '.join(template_vars)}")
+            return
     update_user_ldata(user_id, option, value)
     await delete_message(message)
     await database.update_user_data(user_id)
@@ -613,6 +695,8 @@ async def get_menu(option, message, user_id):
         "YT_ADD_TO_PLAYLIST_ID",
     ]:
         back_to = "youtube"
+    elif option in ["RENAME_TEMPLATE", "START_EPISODE", "START_SEASON"]:
+        back_to = "auto_rename"
     else:
         back_to = "back"
     buttons.data_button("Back", f"userset {user_id} {back_to}")
@@ -742,6 +826,7 @@ async def edit_user_settings(client, query):
         "gofile",
         "youtube",
         "auto_process",
+        "auto_rename",
     ]:
         await query.answer()
         await update_user_settings(query, data[2])
@@ -766,6 +851,8 @@ async def edit_user_settings(client, query):
             back_to = "main"
         elif data[3] in ["AUTO_YT_LEECH", "AUTO_LEECH", "AUTO_MIRROR"]:
             back_to = "auto_process"
+        elif data[3] == "AUTO_RENAME":
+            back_to = "auto_rename"
         else:
             back_to = "leech"
         await update_user_settings(query, stype=back_to)

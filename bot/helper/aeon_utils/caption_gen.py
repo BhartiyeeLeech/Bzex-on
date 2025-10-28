@@ -21,7 +21,7 @@ class DefaultDict(dict):
         return "Unknown"
 
 
-async def generate_caption(filename, directory, caption_template):
+async def generate_caption(filename, directory, caption_template, media_info=None):
     """
     Generates a caption for a media file based on its MediaInfo
     and a provided template.
@@ -30,12 +30,38 @@ async def generate_caption(filename, directory, caption_template):
         filename: The name of the media file.
         directory: The directory where the file is located.
         caption_template: A string template for the caption with placeholders.
+        media_info: Optional dict with pre-extracted media information from telegram_uploader.
 
     Returns:
         A formatted caption string or the original filename if MediaInfo fails.
     """
     file_path = os.path.join(directory, filename)
 
+    # Use pre-extracted media info if provided
+    if media_info:
+        caption_data = DefaultDict(
+            filename=media_info.get("filename", filename),
+            filesize=media_info.get("filesize", "Unknown"),
+            file_caption=media_info.get("file_caption", ""),
+            languages=media_info.get("languages", "Unknown"),
+            subtitles=media_info.get("subtitles", "Unknown"),
+            duration=media_info.get("duration", "Unknown"),
+            ott=media_info.get("ott", ""),
+            resolution=media_info.get("resolution", "Unknown"),
+            name=media_info.get("name", ""),
+            year=media_info.get("year", ""),
+            quality=media_info.get("quality", "Unknown"),
+            season=media_info.get("season", ""),
+            episode=media_info.get("episode", ""),
+            audio=media_info.get("audio", "Unknown"),
+            # Legacy fields for backward compatibility
+            size=media_info.get("filesize", "Unknown"),
+            audios=media_info.get("languages", "Unknown"),
+            md5_hash=media_info.get("md5_hash", ""),
+        )
+        return caption_template.format_map(caption_data)
+
+    # Fallback to MediaInfo extraction
     try:
         result = await cmd_exec(["mediainfo", "--Output=JSON", file_path])
         if result[1]:
@@ -73,14 +99,26 @@ async def generate_caption(filename, directory, caption_template):
     subtitle_languages = subtitle_languages if subtitle_languages else "Unknown"
     video_quality = video_quality if video_quality else "Unknown"
     file_md5_hash = calculate_md5(file_path)
+    file_size = get_readable_file_size(await aiopath.getsize(file_path))
 
     caption_data = DefaultDict(
         filename=filename,
-        size=get_readable_file_size(await aiopath.getsize(file_path)),
-        duration=get_readable_time(video_duration, True),
-        quality=video_quality,
-        audios=audio_languages,
+        filesize=file_size,
+        file_caption="",
+        languages=audio_languages,
         subtitles=subtitle_languages,
+        duration=get_readable_time(video_duration, True),
+        ott="",
+        resolution=video_quality,
+        name="",
+        year="",
+        quality=video_quality,
+        season="",
+        episode="",
+        audio=audio_languages,
+        # Legacy fields for backward compatibility
+        size=file_size,
+        audios=audio_languages,
         md5_hash=file_md5_hash,
     )
 

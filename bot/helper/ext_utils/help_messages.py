@@ -382,7 +382,39 @@ user_settings_text = {
     "WATERMARK_KEY": "Send your text which will added as watermark in all mkv videos left upper corner. Timeout: 60 sec",
     "USER_SESSION": "Send your pyrogram user session string for download from private telegram chat. Timeout: 60 sec",
     "USER_DUMP": "Send your channel or group id where you want to store your leeched files. Bot must have permission to send message in your chat. Timeout: 60 sec",
-    "LEECH_FILENAME_CAPTION": "Send leech filename caption. Timeout: 60 sec",
+    "LEECH_FILENAME_CAPTION": """Send leech filename caption with template variables. Timeout: 60 sec
+
+Available Template Variables:
+<b>File Information:</b>
+- <code>{filename}</code>: Original filename with extension
+- <code>{filesize}</code>: Human-readable file size (e.g., 1.5 GB)
+- <code>{file_caption}</code>: Custom caption text (if set)
+
+<b>Media Properties:</b>
+- <code>{languages}</code>: Audio languages detected (comma-separated)
+- <code>{subtitles}</code>: Subtitle languages detected (comma-separated)
+- <code>{duration}</code>: Media duration (HH:MM:SS format)
+- <code>{resolution}</code>: Video resolution (e.g., 1080p, 720p, 4K)
+- <code>{audio}</code>: Audio codec and channels (e.g., AAC 2.0, AC3 5.1)
+
+<b>IMDB/Auto Rename Variables:</b>
+- <code>{name}</code>: Movie/TV show title from IMDB
+- <code>{year}</code>: Release year from IMDB
+- <code>{quality}</code>: Detected quality (1080p, 720p, 2160p, etc.)
+- <code>{season}</code>: Season number (S01, S02, etc.)
+- <code>{episode}</code>: Episode number (E01, E02, etc.)
+- <code>{ott}</code>: OTT platform tag (if detected)
+
+<b>Legacy Variables (still supported):</b>
+- <code>{size}</code>: Same as {filesize}
+- <code>{audios}</code>: Same as {languages}
+- <code>{md5_hash}</code>: MD5 checksum of the file
+
+<b>Example Templates:</b>
+1. <code>📁 {filename}\n💾 Size: {filesize}\n⏱ Duration: {duration}</code>
+2. <code>{name} ({year}) - {quality}\n🎬 {filename} | {filesize}</code>
+3. <code>🎥 {filename}\n🔊 Audio: {languages}\n📝 Subs: {subtitles}</code>
+4. <code>{name} S{season}E{episode} [{quality} {audio}]\n💾 {filesize} | ⏱ {duration}</code>""",
     "LEECH_SPLIT_SIZE": f"Send Leech split size in bytes or use gb or mb. Example: 40000000 or 2.5gb or 1000mb. IS_PREMIUM_USER: {TgClient.IS_PREMIUM_USER}. Timeout: 60 sec",
     "LEECH_FILENAME_PREFIX": r"Send Leech Filename Prefix. You can add HTML tags. Example: <code>@mychannel</code>. Timeout: 60 sec",
     "THUMBNAIL_LAYOUT": "Send thumbnail layout (widthxheight, 2x2, 3x3, 2x4, 4x4, ...). Example: 3x3. Timeout: 60 sec",
@@ -420,6 +452,47 @@ Timeout: 60 sec""",
     "YT_ADD_TO_PLAYLIST_ID": "Enter the YouTube Playlist ID you want your videos to be added to. If set, newly uploaded videos will be added to this playlist. Leave empty or set to 'None' to not automatically add to a specific playlist (unless creating a new one for a folder upload without this setting). Timeout: 60 sec",
     "GOFILE_TOKEN": "Send your GoFile API token. You can get it from https://gofile.io/myProfile. This token will be used to upload files to your GoFile account. Timeout: 60 sec",
     "GOFILE_FOLDER_ID": "Send your GoFile folder ID where you want to upload files. If not set, files will be uploaded to your account root. You can get folder ID from the GoFile URL. Example: for https://gofile.io/d/abcd123, the folder ID is abcd123. Timeout: 60 sec",
+    "AUTO_RENAME": """Enable or disable automatic file renaming with IMDB integration.
+When enabled:
+- Fetches metadata from IMDB (title, year, rating, genres, poster)
+- Detects media quality (resolution, codec, audio)
+- Handles multi-resolution batches intelligently
+- Tracks episode numbers for TV shows
+- Applies custom rename template to files
+
+Template Variables: {name}, {year}, {quality}, {season}, {episode}, {audio}
+Example template: <code>{name} ({year}) S{season}E{episode} {quality} {audio}</code>
+Result: <code>Breaking Bad (2008) S01E01 1080p AAC 5.1</code>""",
+    "RENAME_TEMPLATE": """Customize the auto-rename filename template.
+Available variables:
+- <code>{name}</code>: Title from IMDB (Movie/TV Show name)
+- <code>{year}</code>: Release year from IMDB
+- <code>{quality}</code>: Detected quality (1080p, 720p, 2160p, etc.)
+- <code>{season}</code>: Season number (S01, S02, etc.)
+- <code>{episode}</code>: Episode number (E01, E02, etc.)
+- <code>{audio}</code>: Audio codec with channels (AAC 2.0, AC3 5.1, etc.)
+
+Example Templates:
+1. <code>{name} ({year}) S{season}E{episode} {quality} {audio}</code>
+2. <code>{name} {year} {quality}</code>
+3. <code>[{quality}] {name} - {season}{episode}</code>
+4. <code>{name} S{season}E{episode} [{quality} {audio}]</code>
+
+Must contain at least one variable. Timeout: 60 sec""",
+    "START_EPISODE": """Set the starting episode number for TV show renaming.
+When processing TV episodes, the counter will start from this number.
+Example: Set to 5 to start naming episodes as E05, E06, E07...
+
+Valid range: 1 to 9999
+Default: 1
+Timeout: 60 sec""",
+    "START_SEASON": """Set the starting season number for TV show renaming.
+When processing TV shows, the season will be labeled with this number.
+Example: Set to 2 to name episodes as S02E01, S02E02...
+
+Valid range: 1 to 99
+Default: 1
+Timeout: 60 sec""",
 }
 
 help_string = f"""
