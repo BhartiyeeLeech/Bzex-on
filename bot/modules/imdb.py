@@ -7,6 +7,7 @@ from logging import getLogger
 from urllib.parse import quote_plus
 
 import requests
+
 try:
     from bs4 import BeautifulSoup
 except Exception:
