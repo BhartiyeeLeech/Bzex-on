@@ -324,18 +324,24 @@ class TelegramUploader:
                     file_ = pre_file_  # Keep original name if template fails
 
                 # Build media_info dict for caption generation
-                from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
-                
+                from bot.helper.ext_utils.status_utils import (
+                    get_readable_file_size,
+                    get_readable_time,
+                )
+
                 file_size = ospath.getsize(up_path)
                 duration_seconds = 0
-                
+
                 # Get duration from ffprobe
                 try:
                     duration_cmd = [
                         "ffprobe",
-                        "-v", "error",
-                        "-show_entries", "format=duration",
-                        "-of", "default=noprint_wrappers=1:nokey=1",
+                        "-v",
+                        "error",
+                        "-show_entries",
+                        "format=duration",
+                        "-of",
+                        "default=noprint_wrappers=1:nokey=1",
                         up_path,
                     ]
                     duration_out = subprocess.run(
@@ -351,11 +357,24 @@ class TelegramUploader:
                     pass
 
                 # Extract season/episode from the ORIGINAL filename for caption
-                filename_name, filename_season, filename_episode, filename_year, _, _ = extract_media_info(pre_file_)
-                
+                (
+                    filename_name,
+                    filename_season,
+                    filename_episode,
+                    filename_year,
+                    _,
+                    _,
+                ) = extract_media_info(pre_file_)
+
                 # Use extracted values from filename if available, otherwise use template fields
-                caption_season = filename_season if filename_season else str(season).zfill(2)
-                caption_episode = filename_episode if filename_episode else str(template_fields.get('episode2', episode)).zfill(2)
+                caption_season = (
+                    filename_season if filename_season else str(season).zfill(2)
+                )
+                caption_episode = (
+                    filename_episode
+                    if filename_episode
+                    else str(template_fields.get("episode2", episode)).zfill(2)
+                )
                 caption_name = imdb_data.get("title", "") or filename_name
                 caption_year = imdb_data.get("year", "") or filename_year
 
@@ -365,7 +384,9 @@ class TelegramUploader:
                     "file_caption": "",
                     "languages": audio if audio else "Unknown",
                     "subtitles": "Unknown",
-                    "duration": get_readable_time(duration_seconds, True) if duration_seconds else "Unknown",
+                    "duration": get_readable_time(duration_seconds, True)
+                    if duration_seconds
+                    else "Unknown",
                     "ott": "",
                     "resolution": f"{quality}p" if quality else "Unknown",
                     "name": caption_name,
