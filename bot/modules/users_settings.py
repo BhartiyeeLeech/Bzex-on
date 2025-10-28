@@ -289,12 +289,73 @@ Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
         buttons.data_button("Back", f"userset {user_id} youtube")
         buttons.data_button("Close", f"userset {user_id} close")
         text = f"<u>Set Default YouTube Folder Upload Mode for {name}</u>"
+    elif stype == "auto_process":
+        # Auto Leech/Mirror/YT Leech settings
+        auto_yt_leech = user_dict.get("AUTO_YT_LEECH", False)
+        auto_leech = user_dict.get("AUTO_LEECH", False)
+        auto_mirror = user_dict.get("AUTO_MIRROR", False)
+        
+        if auto_yt_leech:
+            buttons.data_button(
+                "Disable Auto YT Leech",
+                f"userset {user_id} tog AUTO_YT_LEECH f",
+            )
+            ayt_status = "Enabled"
+        else:
+            buttons.data_button(
+                "Enable Auto YT Leech",
+                f"userset {user_id} tog AUTO_YT_LEECH t",
+            )
+            ayt_status = "Disabled"
+        
+        if auto_leech:
+            buttons.data_button(
+                "Disable Auto Leech",
+                f"userset {user_id} tog AUTO_LEECH f",
+            )
+            al_status = "Enabled"
+        else:
+            buttons.data_button(
+                "Enable Auto Leech",
+                f"userset {user_id} tog AUTO_LEECH t",
+            )
+            al_status = "Disabled"
+        
+        if auto_mirror:
+            buttons.data_button(
+                "Disable Auto Mirror",
+                f"userset {user_id} tog AUTO_MIRROR f",
+            )
+            am_status = "Enabled"
+        else:
+            buttons.data_button(
+                "Enable Auto Mirror",
+                f"userset {user_id} tog AUTO_MIRROR t",
+            )
+            am_status = "Disabled"
+        
+        buttons.data_button("Back", f"userset {user_id} back")
+        buttons.data_button("Close", f"userset {user_id} close")
+        
+        text = f"""<u>Auto Processing Settings for {name}</u>
+
+<b>Auto YT Leech:</b> {ayt_status}
+<b>Auto Leech:</b> {al_status}
+<b>Auto Mirror:</b> {am_status}
+
+<i> Auto YT Leech: Automatically leech YouTube/video URLs only
+ Auto Leech: Automatically leech ALL content (URLs + media)
+ Auto Mirror: Automatically mirror ALL content (URLs + media)
+
+Priority: AUTO_YT_LEECH > AUTO_LEECH > AUTO_MIRROR
+If only Auto YT Leech is enabled, only video URLs are processed.</i>"""
     else:
         buttons.data_button("Leech", f"userset {user_id} leech")
         buttons.data_button("Rclone", f"userset {user_id} rclone")
         buttons.data_button("Gdrive API", f"userset {user_id} gdrive")
         buttons.data_button("GoFile", f"userset {user_id} gofile")
         buttons.data_button("YouTube", f"userset {user_id} youtube")
+        buttons.data_button("Auto Leech/Mirror", f"userset {user_id} auto_process")
 
         upload_paths = user_dict.get("UPLOAD_PATHS", {})
         if (
@@ -674,7 +735,7 @@ async def edit_user_settings(client, query):
         await query.answer("Not Yours!", show_alert=True)
     elif data[2] == "setevent":
         await query.answer()
-    elif data[2] in ["leech", "gdrive", "rclone", "gofile", "youtube"]:
+    elif data[2] in ["leech", "gdrive", "rclone", "gofile", "youtube", "auto_process"]:
         await query.answer()
         await update_user_settings(query, data[2])
     elif data[2] == "menu":
@@ -696,6 +757,8 @@ async def edit_user_settings(client, query):
             back_to = "gdrive"
         elif data[3] == "USER_TOKENS":
             back_to = "main"
+        elif data[3] in ["AUTO_YT_LEECH", "AUTO_LEECH", "AUTO_MIRROR"]:
+            back_to = "auto_process"
         else:
             back_to = "leech"
         await update_user_settings(query, stype=back_to)

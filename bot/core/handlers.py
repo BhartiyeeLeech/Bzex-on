@@ -265,3 +265,15 @@ def add_handlers():
             filters=regex(r"^/stop(_\w+)?(?!all)") & CustomFilters.authorized,
         ),
     )
+
+    from bot.helper.ext_utils.auto_processor import (
+        AutoProcessor,
+        auto_process_filter,
+    )
+    
+    TgClient.bot.add_handler(
+        MessageHandler(
+            AutoProcessor.process_auto_message,
+            filters=CustomFilters.authorized & auto_process_filter,
+        ),
+    )
