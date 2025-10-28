@@ -385,7 +385,6 @@ user_settings_text = {
     "LEECH_FILENAME_CAPTION": """Send leech filename caption with template variables. Timeout: 60 sec
 
 - <code>{filename}</code>: Original filename with extension
-- <code>{filesize}</code>: Human-readable file size (e.g., 1.5 GB)
 - <code>{file_caption}</code>: Custom caption text (if set)
 - <code>{languages}</code>: Audio languages detected (comma-separated)
 - <code>{subtitles}</code>: Subtitle languages detected (comma-separated)
@@ -398,10 +397,8 @@ user_settings_text = {
 - <code>{season}</code>: Season number (S01, S02, etc.)
 - <code>{episode}</code>: Episode number (E01, E02, etc.)
 - <code>{ott}</code>: OTT platform tag (if detected)
-- <code>{size}</code>: Same as {filesize}
-- <code>{audios}</code>: Same as {languages}
+- <code>{size}</code>
 - <code>{md5_hash}</code>: MD5 checksum of the file
-
 <b>Example Templates:</b>
 1. <code>📁 {filename}\n💾 Size: {filesize}\n⏱ Duration: {duration}</code>
 2. <code>{name} ({year}) - {quality}\n🎬 {filename} | {filesize}</code>
