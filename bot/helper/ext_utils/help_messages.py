@@ -384,28 +384,20 @@ user_settings_text = {
     "USER_DUMP": "Send your channel or group id where you want to store your leeched files. Bot must have permission to send message in your chat. Timeout: 60 sec",
     "LEECH_FILENAME_CAPTION": """Send leech filename caption with template variables. Timeout: 60 sec
 
-Available Template Variables:
-<b>File Information:</b>
 - <code>{filename}</code>: Original filename with extension
 - <code>{filesize}</code>: Human-readable file size (e.g., 1.5 GB)
 - <code>{file_caption}</code>: Custom caption text (if set)
-
-<b>Media Properties:</b>
 - <code>{languages}</code>: Audio languages detected (comma-separated)
 - <code>{subtitles}</code>: Subtitle languages detected (comma-separated)
 - <code>{duration}</code>: Media duration (HH:MM:SS format)
 - <code>{resolution}</code>: Video resolution (e.g., 1080p, 720p, 4K)
 - <code>{audio}</code>: Audio codec and channels (e.g., AAC 2.0, AC3 5.1)
-
-<b>IMDB/Auto Rename Variables:</b>
 - <code>{name}</code>: Movie/TV show title from IMDB
 - <code>{year}</code>: Release year from IMDB
 - <code>{quality}</code>: Detected quality (1080p, 720p, 2160p, etc.)
 - <code>{season}</code>: Season number (S01, S02, etc.)
 - <code>{episode}</code>: Episode number (E01, E02, etc.)
 - <code>{ott}</code>: OTT platform tag (if detected)
-
-<b>Legacy Variables (still supported):</b>
 - <code>{size}</code>: Same as {filesize}
 - <code>{audios}</code>: Same as {languages}
 - <code>{md5_hash}</code>: MD5 checksum of the file
